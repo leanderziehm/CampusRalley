@@ -86,3 +86,16 @@ git push origin main
 ```
 
 The backend is maintained and deployed separately from the `CampusRallyeBackend` repository.
+
+### Neue Personen als Developer hinzufügen
+
+Nur Personen mit Administratorrechten können neue Personen zum Repository hinzufügen.
+
+1. Öffne das Repository auf GitHub.
+2. Wähle **Settings** und anschließend **Collaborators** beziehungsweise **Collaborators and teams**.
+3. Klicke auf **Add people** oder **Add people to this repository**.
+4. Suche nach dem GitHub-Benutzernamen oder der E-Mail-Adresse der Person und sende die Einladung.
+5. Wähle als Berechtigungsstufe **Write**. Diese Rolle entspricht dem normalen Developer-Zugriff: Die Person kann Branches und Commits pushen sowie Pull Requests erstellen, aber keine Repository-Einstellungen verwalten.
+6. Falls in der Organisation eine eigene Rolle **Developer** angeboten wird, kann stattdessen diese Rolle ausgewählt werden.
+
+Die eingeladene Person muss die Einladung zunächst über GitHub oder per E-Mail annehmen. Anschließend kann sie das Repository klonen und mit dem oben beschriebenen Branch- und Pull-Request-Ablauf arbeiten.
