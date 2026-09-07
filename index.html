@@ -321,6 +321,7 @@
           //console.log("checkBtn clicked");
           const question = questions[currentQuestionIndex];
           let isCorrect;
+          let incorrectGroupIndexes = [];
 
           if (isMultipleChoiceGroup(question)) {
             const selectedAnswers = multipleChoiceGroups.map((group) =>
@@ -333,10 +334,11 @@
               const correctAnswers = getCorrectAnswers(
                 getSubquestions(question)[groupIndex]
               );
-              return (
+              const groupIsCorrect =
                 answers.length === correctAnswers.length &&
-                answers.every((answer) => correctAnswers.includes(answer))
-              );
+                answers.every((answer) => correctAnswers.includes(answer));
+              if (!groupIsCorrect) incorrectGroupIndexes.push(groupIndex);
+              return groupIsCorrect;
             });
           } else if (isMultipleChoice(question)) {
             const selectedAnswers = multipleChoiceInputs
@@ -386,7 +388,9 @@
             const feedback = document.querySelector(".feedback");
             if (feedback) {
               feedback.style.visibility = "visible";
-              feedback.textContent = getWrongText(countersLeft);
+              feedback.textContent = isMultipleChoiceGroup(question)
+                ? getGroupedWrongText(incorrectGroupIndexes, countersLeft)
+                : getWrongText(countersLeft);
             } else {
               //timestatmp
               //console.log('feedback not found', new Date().getTime());
@@ -551,6 +555,17 @@
         return Object.keys(subquestions)
           .sort((a, b) => Number(a) - Number(b))
           .map((index) => subquestions[index]);
+      }
+
+      function getGroupedWrongText(incorrectGroupIndexes, countersLeft) {
+        const questionNumbers = incorrectGroupIndexes
+          .map((index) => index + 1)
+          .join(language === "de" ? " und " : " and ");
+        const prefix =
+          language === "de"
+            ? `${incorrectGroupIndexes.length > 1 ? "Teilfragen" : "Teilfrage"} ${questionNumbers} ${incorrectGroupIndexes.length > 1 ? "sind" : "ist"} falsch.`
+            : `Subquestion ${questionNumbers} ${incorrectGroupIndexes.length > 1 ? "are" : "is"} incorrect.`;
+        return `${prefix} ${getWrongText(countersLeft)}`;
       }
 
       function getMultipleChoiceOptions(question) {
