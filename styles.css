@@ -98,6 +98,21 @@ header {
     margin-top: 15px;
     margin-bottom: 20px;
 }
+.multiple-choice-group-container {
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
+.multiple-choice-question {
+    margin-bottom: 24px;
+}
+.multiple-choice-question p {
+    margin-bottom: 10px;
+}
+.multiple-choice-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 .multiple-choice-option {
     display: flex;
     align-items: center;
