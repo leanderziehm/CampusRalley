@@ -1031,8 +1031,13 @@
       }
       function loadCorrectText(index) {
         const question = questions[index];
+        const answerText = isMultipleChoiceGroup(question)
+          ? language === "de"
+            ? "alle Teilfragen korrekt beantwortet"
+            : "all subquestions correctly answered"
+          : question.answer;
         const correctText = data["correct-text"]
-          .replace("[REPLACE_1]", makeBold(question.answer))
+          .replace("[REPLACE_1]", makeBold(answerText))
           .replace("[REPLACE_2]", makeBold(question.letter));
         let quizContainerInnerHTML = `<b>${question.correctText}</b> <p>${correctText}</p>`;
         quizContainer.innerHTML = quizContainerInnerHTML;
