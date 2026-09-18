@@ -52,6 +52,22 @@ question_1_letter     B
 question_1_correctText Correct!
 ```
 
+A `multiple-choice-input` question shows several empty input fields. The
+possible answers are not displayed; they are only used internally to validate
+the entered answers. The number of input fields equals the number of correct
+answers. Multiple answers are separated with `|`:
+
+```text
+question_2_type       multiple-choice-input
+question_2_text       Which materials were processed with a laser?
+question_2_options    Wood|Plastic|Felt|Cork|Metal
+question_2_answer     Wood|Plastic|Felt|Cork
+question_2_letter     F
+question_2_correctText Well observed!
+```
+
+The answer order does not matter, but duplicate answers are not accepted.
+
 A grouped multiple-choice question requires every subquestion to be answered correctly before its shared letter is awarded:
 
 ```text
@@ -65,6 +81,26 @@ question_10_subquestion_2_options        ca. 80|ca. 150|ca. 220|ca. 380
 question_10_subquestion_2_answer         ca. 220
 question_10_letter                       Z
 question_10_correctText                   Beide Antworten sind richtig!
+```
+
+Subquestions can also use `multiple-choice-input` for several self-entered
+answers. The `options` field remains hidden and is only used for validation.
+Normal text subquestions use `text` and `answer`; multiple-choice subquestions
+also use `type` and `options`. All three types can be mixed in one group:
+
+```text
+question_11_type                         multiple-choice-group
+question_11_text                         Campus-Rallye
+question_11_subquestion_1_type           multiple-choice
+question_11_subquestion_1_text           Welche Farbe hat das Logo?
+question_11_subquestion_1_options        Blau|Rot|Grün
+question_11_subquestion_1_answer         Blau
+question_11_subquestion_2_type           multiple-choice-input
+question_11_subquestion_2_text           Welche Farben hat das Gebäude?
+question_11_subquestion_2_options        Blau|Rot|Grün
+question_11_subquestion_2_answer         Blau|Grün
+question_11_letter                       C
+question_11_correctText                   Beide Antworten sind richtig!
 ```
 
 Question index `10` is displayed as question 11 because indexes start at zero.

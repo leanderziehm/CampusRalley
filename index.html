@@ -325,18 +325,20 @@
 
           if (isMultipleChoiceGroup(question)) {
             const selectedAnswers = multipleChoiceGroups.map((group) =>
-              group.inputs
-                .filter((input) => input.checked)
-                .map((input) => input.value)
+              group.type === "multiple-choice"
+                ? group.inputs
+                    .filter((input) => input.checked)
+                    .map((input) => input.value)
+                : group.inputs.map((input) => input.value.trim())
             );
             saveAnswerToLocalStorage(currentQuestionIndex, selectedAnswers);
-            isCorrect = selectedAnswers.every((answers, groupIndex) => {
-              const correctAnswers = getCorrectAnswers(
-                getSubquestions(question)[groupIndex]
+            isCorrect = selectedAnswers.every((answer, groupIndex) => {
+              const subquestion = getSubquestions(question)[groupIndex];
+              const groupIsCorrect = answersMatch(
+                answer,
+                getCorrectAnswers(subquestion),
+                getMultipleChoiceOptions(subquestion)
               );
-              const groupIsCorrect =
-                answers.length === correctAnswers.length &&
-                answers.every((answer) => correctAnswers.includes(answer));
               if (!groupIsCorrect) incorrectGroupIndexes.push(groupIndex);
               return groupIsCorrect;
             });
@@ -349,6 +351,16 @@
             isCorrect =
               selectedAnswers.length === correctAnswers.length &&
               selectedAnswers.every((answer) => correctAnswers.includes(answer));
+          } else if (isMultipleChoiceInput(question)) {
+            const enteredAnswers = multipleChoiceInputs.map((input) =>
+              input.value.trim()
+            );
+            saveAnswerToLocalStorage(currentQuestionIndex, enteredAnswers);
+            isCorrect = answersMatch(
+              enteredAnswers,
+              getCorrectAnswers(question),
+              getMultipleChoiceOptions(question)
+            );
           } else {
             saveAnswerToLocalStorage(currentQuestionIndex);
             const currentInput = blocksArray
@@ -376,6 +388,9 @@
               group.inputs.forEach((input) => {
                 input.disabled = true;
               });
+              if (group.input) {
+                group.input.disabled = true;
+              }
             });
             callEffect();
             loadCorrectText(currentQuestionIndex);
@@ -531,6 +546,33 @@
         return question.type?.toLowerCase() === "multiple-choice";
       }
 
+      function isMultipleChoiceInput(question) {
+        return ["multiple-choice-input", "multiple-choice-inputs"].includes(
+          question.type?.toLowerCase()
+        );
+      }
+
+      function answersMatch(enteredAnswers, correctAnswers, possibleAnswers) {
+        const entered = (Array.isArray(enteredAnswers)
+          ? enteredAnswers
+          : [enteredAnswers]
+        )
+          .map((answer) => answer.trim().toLowerCase())
+          .filter(Boolean);
+        const correct = correctAnswers.map((answer) =>
+          answer.trim().toLowerCase()
+        );
+        const possible = possibleAnswers.map((answer) =>
+          answer.trim().toLowerCase()
+        );
+        return (
+          entered.length === correct.length &&
+          entered.every((answer) => possible.includes(answer)) &&
+          entered.every((answer) => correct.includes(answer)) &&
+          new Set(entered).size === entered.length
+        );
+      }
+
       function isMultipleChoiceGroup(question) {
         return ["multiple-choice-group", "multiple-choice-groups"].includes(
           question.type?.toLowerCase()
@@ -613,6 +655,18 @@
         });
       }
 
+      function createTypedAnswerInputs(question, container, inputs) {
+        getCorrectAnswers(question).forEach((_, inputIndex) => {
+          const input = document.createElement("input");
+          input.type = "text";
+          input.classList.add("subquestion-text-input");
+          input.placeholder = `${language === "de" ? "Antwort" : "Answer"} ${inputIndex + 1}`;
+          input.autocomplete = "off";
+          container.appendChild(input);
+          inputs.push(input);
+        });
+      }
+
       function createMultipleChoiceGroup(question, container) {
         multipleChoiceGroups = [];
         getSubquestions(question).forEach((subquestion, questionIndex) => {
@@ -625,26 +679,45 @@
 
           const optionsContainer = document.createElement("div");
           optionsContainer.classList.add("multiple-choice-options");
-          const group = { inputs: [] };
-          const options = getMultipleChoiceOptions(subquestion);
+          const group = {
+            type: isMultipleChoice(subquestion)
+              ? "multiple-choice"
+              : isMultipleChoiceInput(subquestion)
+              ? "multiple-choice-input"
+              : "text",
+            inputs: [],
+            input: null,
+          };
 
-          options.forEach((option, optionIndex) => {
-            const label = document.createElement("label");
-            label.classList.add("multiple-choice-option");
+          if (group.type === "multiple-choice") {
+            getMultipleChoiceOptions(subquestion).forEach((option, optionIndex) => {
+              const label = document.createElement("label");
+              label.classList.add("multiple-choice-option");
 
+              const input = document.createElement("input");
+              input.type = "checkbox";
+              input.value = option;
+              input.id = `question-${currentQuestionIndex}-subquestion-${questionIndex}-option-${optionIndex}`;
+              label.htmlFor = input.id;
+
+              const optionText = document.createElement("span");
+              optionText.textContent = option;
+              label.appendChild(input);
+              label.appendChild(optionText);
+              optionsContainer.appendChild(label);
+              group.inputs.push(input);
+            });
+          } else if (group.type === "multiple-choice-input") {
+            createTypedAnswerInputs(subquestion, optionsContainer, group.inputs);
+          } else {
             const input = document.createElement("input");
-            input.type = "checkbox";
-            input.value = option;
-            input.id = `question-${currentQuestionIndex}-subquestion-${questionIndex}-option-${optionIndex}`;
-            label.htmlFor = input.id;
-
-            const optionText = document.createElement("span");
-            optionText.textContent = option;
-            label.appendChild(input);
-            label.appendChild(optionText);
-            optionsContainer.appendChild(label);
+            input.type = "text";
+            input.classList.add("subquestion-text-input");
+            input.placeholder = language === "de" ? "Antwort eingeben" : "Enter answer";
+            input.autocomplete = "off";
             group.inputs.push(input);
-          });
+            optionsContainer.appendChild(input);
+          }
 
           questionWrapper.appendChild(optionsContainer);
           container.appendChild(questionWrapper);
@@ -799,14 +872,20 @@
         if (isMultipleChoiceGroup(questions[index])) {
           const selectedAnswers = JSON.parse(savedAnswer || "[]");
           multipleChoiceGroups.forEach((group, groupIndex) => {
-            (selectedAnswers[groupIndex] || []).forEach((answer) => {
-              const input = group.inputs.find((item) => item.value === answer);
-              if (input) input.checked = true;
-            });
-            if (questionsAnsweredCorrect[index]) {
-              group.inputs.forEach((input) => {
-                input.disabled = true;
+            if (group.type === "multiple-choice") {
+              (selectedAnswers[groupIndex] || []).forEach((answer) => {
+                const input = group.inputs.find((item) => item.value === answer);
+                if (input) input.checked = true;
               });
+            } else {
+              (selectedAnswers[groupIndex] || []).forEach((answer, inputIndex) => {
+                if (group.inputs[inputIndex]) {
+                  group.inputs[inputIndex].value = answer;
+                }
+              });
+            }
+            if (questionsAnsweredCorrect[index]) {
+              group.inputs.forEach((input) => (input.disabled = true));
             }
           });
           return;
@@ -819,6 +898,15 @@
             if (questionsAnsweredCorrect[index]) {
               input.disabled = true;
             }
+          });
+          return;
+        }
+
+        if (isMultipleChoiceInput(questions[index])) {
+          const enteredAnswers = JSON.parse(savedAnswer || "[]");
+          multipleChoiceInputs.forEach((input, inputIndex) => {
+            input.value = enteredAnswers[inputIndex] || "";
+            input.disabled = Boolean(questionsAnsweredCorrect[index]);
           });
           return;
         }
@@ -841,7 +929,11 @@
         }
       }
       function saveAnswerToLocalStorage(index, selectedAnswers) {
-        if (isMultipleChoiceGroup(questions[index]) || isMultipleChoice(questions[index])) {
+        if (
+          isMultipleChoiceGroup(questions[index]) ||
+          isMultipleChoice(questions[index]) ||
+          isMultipleChoiceInput(questions[index])
+        ) {
           localStorage.setItem("input" + index, JSON.stringify(selectedAnswers || []));
           return;
         }
@@ -891,6 +983,10 @@
         } else if (isMultipleChoice(question)) {
           blockContainer.classList.add("multiple-choice-container");
           createMultipleChoiceOptions(question, blockContainer);
+        } else if (isMultipleChoiceInput(question)) {
+          blockContainer.classList.add("multiple-choice-container");
+          multipleChoiceInputs = [];
+          createTypedAnswerInputs(question, blockContainer, multipleChoiceInputs);
         } else {
           blockContainer.classList.add("block-container");
           createInputBoxes(question, blockContainer);

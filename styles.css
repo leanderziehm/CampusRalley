@@ -125,6 +125,14 @@ header {
     width: 18px;
     height: 18px;
 }
+.subquestion-text-input {
+    width: 100%;
+    max-width: 420px;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #ccc;
+    font: inherit;
+}
 .btn {
     display: inline-block;
     padding: 15px 15px;
